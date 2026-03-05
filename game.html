@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>משחק מגע</title>
 
 <style>
 body{
     margin:0;
     overflow:hidden;
+    touch-action:none;
     background:#87CEEB;
 }
 
@@ -35,20 +35,23 @@ let player = document.getElementById("player");
 let playerX = 150;
 let playerY = 200;
 
-let lastTouchX = null;
-let lastTouchY = null;
+let lastX = 0;
+let lastY = 0;
 
 document.addEventListener("touchstart", function(e){
-    lastTouchX = e.touches[0].clientX;
-    lastTouchY = e.touches[0].clientY;
+    let touch = e.touches[0];
+    lastX = touch.clientX;
+    lastY = touch.clientY;
 });
 
 document.addEventListener("touchmove", function(e){
 
+    e.preventDefault(); // מונע גלילה
+
     let touch = e.touches[0];
 
-    let dx = touch.clientX - lastTouchX;
-    let dy = touch.clientY - lastTouchY;
+    let dx = touch.clientX - lastX;
+    let dy = touch.clientY - lastY;
 
     playerX += dx;
     playerY += dy;
@@ -56,8 +59,8 @@ document.addEventListener("touchmove", function(e){
     player.style.left = playerX + "px";
     player.style.top = playerY + "px";
 
-    lastTouchX = touch.clientX;
-    lastTouchY = touch.clientY;
+    lastX = touch.clientX;
+    lastY = touch.clientY;
 
 });
 
