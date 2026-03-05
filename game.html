@@ -17,8 +17,8 @@ body{
     height:60px;
     background:red;
     position:absolute;
-    left:100px;
-    top:100px;
+    left:150px;
+    top:200px;
     border-radius:15px;
 }
 </style>
@@ -32,12 +32,32 @@ body{
 
 let player = document.getElementById("player");
 
+let playerX = 150;
+let playerY = 200;
+
+let lastTouchX = null;
+let lastTouchY = null;
+
+document.addEventListener("touchstart", function(e){
+    lastTouchX = e.touches[0].clientX;
+    lastTouchY = e.touches[0].clientY;
+});
+
 document.addEventListener("touchmove", function(e){
 
     let touch = e.touches[0];
 
-    player.style.left = touch.clientX - 30 + "px";
-    player.style.top = touch.clientY - 30 + "px";
+    let dx = touch.clientX - lastTouchX;
+    let dy = touch.clientY - lastTouchY;
+
+    playerX += dx;
+    playerY += dy;
+
+    player.style.left = playerX + "px";
+    player.style.top = playerY + "px";
+
+    lastTouchX = touch.clientX;
+    lastTouchY = touch.clientY;
 
 });
 
