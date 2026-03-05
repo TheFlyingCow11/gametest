@@ -4,122 +4,91 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  overflow: hidden;
-  touch-action: none;
-  font-family: Arial;
-  user-select: none;
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { overflow: hidden; touch-action: none; font-family: Arial, sans-serif; user-select: none; background: #111; }
+
+/* ── Start Screen ── */
+#startScreen {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: #111; gap: 18px;
 }
-#map {
-  position: fixed;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+#startScreen h1 { font-size: 40px; color: white; letter-spacing: 2px; margin-bottom: 6px; }
+#startScreen p  { color: #aaa; font-size: 15px; margin-bottom: 14px; }
+.startBtn {
+  width: 250px; padding: 16px 0; border: none; border-radius: 12px;
+  font-size: 17px; font-weight: bold; cursor: pointer;
+  transition: transform 0.1s, opacity 0.1s;
 }
+.startBtn:active { transform: scale(0.96); opacity: 0.85; }
+#btn0   { background: linear-gradient(135deg,#ff6b6b,#ffd43b); color:#222; }
+#btn90  { background: linear-gradient(135deg,#4dabf7,#51cf66); color:#222; }
+#btn190 { background: linear-gradient(135deg,#cc5de8,#e64980); color:white; }
+
+/* ── Game ── */
+#game { display: none; }
+#map  { position: fixed; width:100vw; height:100vh; overflow:hidden; }
+
 .quad {
-  position: absolute;
-  width: 50%;
-  height: 50%;
+  position: absolute; width: 50%; height: 50%;
+  transition: left 1.5s ease, top 1.5s ease, width 1.5s ease, height 1.5s ease;
 }
+
+/* Phase 3 red background */
+#redBg { position:fixed; inset:0; background:red; z-index:0; display:none; }
+
+/* Single blue bubble div */
+#bubble {
+  position: fixed;
+  border-radius: 50%;
+  background: blue;
+  z-index: 2;
+  display: none;
+  pointer-events: none;
+}
+
 #player {
-  width: 60px;
-  height: 60px;
-  position: absolute;
-  left: 200px;
-  top: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: grab;
-  z-index: 10;
+  width:60px; height:60px; position:absolute; left:200px; top:200px;
+  display:flex; align-items:center; justify-content:center; cursor:grab; z-index:10;
 }
-#frame {
-  width: 100%;
-  height: 100%;
-  background: black;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-#middle {
-  width: 70%;
-  height: 70%;
-  background: gray;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-}
-#core {
-  width: 40%;
-  height: 40%;
-  background: gray;
-  border-radius: 6px;
-  transition: background 0.2s;
-}
-#version {
-  position: fixed;
-  top: 5px; left: 10px;
-  font-size: 14px;
-  color: white;
-  background: black;
-  padding: 4px 8px;
-  border-radius: 6px;
-  z-index: 20;
-}
-#timer {
-  position: fixed;
-  top: 5px; right: 10px;
-  font-size: 16px;
-  font-weight: bold;
-  color: white;
-  background: black;
-  padding: 4px 10px;
-  border-radius: 6px;
-  z-index: 20;
-  letter-spacing: 1px;
-}
-#hint {
-  position: fixed;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 16px;
-  color: white;
-  background: rgba(0,0,0,0.6);
-  padding: 8px 16px;
-  border-radius: 8px;
-  z-index: 20;
-  pointer-events: none;
-}
-#trailCanvas {
-  position: fixed;
-  top: 0; left: 0;
-  pointer-events: none;
-  z-index: 6;
-}
+#frame  { width:100%; height:100%; background:black; border-radius:12px; display:flex; align-items:center; justify-content:center; }
+#middle { width:70%; height:70%; background:gray; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s; }
+#core   { width:40%; height:40%; background:gray; border-radius:6px; transition:background 0.2s; }
+
+#version { position:fixed; top:5px; left:10px; font-size:14px; color:white; background:rgba(0,0,0,0.7); padding:4px 8px; border-radius:6px; z-index:20; }
+#timer   { position:fixed; top:5px; right:10px; font-size:16px; font-weight:bold; color:white; background:rgba(0,0,0,0.7); padding:4px 10px; border-radius:6px; z-index:20; letter-spacing:1px; }
+#hint    { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); font-size:16px; color:white; background:rgba(0,0,0,0.6); padding:8px 16px; border-radius:8px; z-index:20; pointer-events:none; }
+#trailCanvas { position:fixed; top:0; left:0; pointer-events:none; z-index:6; }
 </style>
 </head>
 <body>
 
-<canvas id="trailCanvas"></canvas>
-<div id="map"></div>
-<div id="player">
-  <div id="frame">
-    <div id="middle">
-      <div id="core"></div>
+<div id="startScreen">
+  <h1>🎮 Color Rush</h1>
+  <p>Stand on the color that matches your character!</p>
+  <button class="startBtn" id="btn0"   onclick="beginGame(0)">▶ Start from beginning</button>
+  <button class="startBtn" id="btn90"  onclick="beginGame(90)">⚡ Start from 1:30 — Phase 2</button>
+  <button class="startBtn" id="btn190" onclick="beginGame(190)">🔥 Start from 3:10 — Phase 3</button>
+</div>
+
+<div id="game">
+  <div id="redBg"></div>
+  <div id="bubble"></div>
+  <canvas id="trailCanvas"></canvas>
+  <div id="map"></div>
+  <div id="player">
+    <div id="frame">
+      <div id="middle"><div id="core"></div></div>
     </div>
   </div>
+  <div id="version">v2.8</div>
+  <div id="timer">0:00</div>
+  <div id="hint">move to start</div>
 </div>
-<div id="version">v2.4</div>
-<div id="timer">0:00</div>
-<div id="hint">move to start</div>
 
 <script>
+const startScreen = document.getElementById("startScreen");
+const gameEl      = document.getElementById("game");
 const playerEl    = document.getElementById("player");
 const middle      = document.getElementById("middle");
 const core        = document.getElementById("core");
@@ -128,162 +97,231 @@ const hint        = document.getElementById("hint");
 const mapEl       = document.getElementById("map");
 const trailCanvas = document.getElementById("trailCanvas");
 const trailCtx    = trailCanvas.getContext("2d");
+const redBg       = document.getElementById("redBg");
+const bubbleEl    = document.getElementById("bubble");
 
 let playerX = 200, playerY = 200;
 const playerSize = 60;
 let lastX = 0, lastY = 0;
-let isDown  = false;
-let started = false;
-let gameOver = false;
-let time = 0;
+let isDown = false, started = false, gameOver = false;
+let time = 0, startOffset = 0;
 
-const COLORS = ["red", "blue", "green", "yellow"];
+const PHASE1_COLORS = ["red","blue","green","yellow"];
+const PHASE2_COLORS = ["red","blue","green","yellow","cyan","purple"];
+let activeColors = [...PHASE1_COLORS];
 
-// Pixel positions for each of the 4 slots (set on resize too)
-let W, H;
-function getSlotPositions() {
-  W = window.innerWidth;
-  H = window.innerHeight;
-  return [
-    { x: 0,     y: 0     },  // top-left
-    { x: W / 2, y: 0     },  // top-right
-    { x: 0,     y: H / 2 },  // bottom-left
-    { x: W / 2, y: H / 2 },  // bottom-right
-  ];
+const POSITIONS_4 = [
+  {left:"0%",  top:"0%"  }, {left:"50%", top:"0%"  },
+  {left:"0%",  top:"50%"}, {left:"50%", top:"50%"},
+];
+const POSITIONS_6 = [
+  {left:"0%",      top:"0%"  }, {left:"33.333%", top:"0%"  }, {left:"66.666%", top:"0%"  },
+  {left:"0%",      top:"50%"}, {left:"33.333%", top:"50%"}, {left:"66.666%", top:"50%"},
+];
+
+const quadDivs = {};
+let colorAtPosition = [];
+let currentColor = null, nextColor = null;
+let isTransitioning = false, bgSwapInterval = null;
+let phase2Active = false, phase3Active = false;
+let cycleId = 0, CYCLE_DURATION = 10000;
+
+// ── Blue bubble (phase 3) ──────────────────────────────────
+const BUBBLE_R    = 130;  // radius px
+const SPEED_START = 0.5;  // px/frame at start of phase 3
+const SPEED_MAX   = 3.5;  // px/frame cap
+let bx = 0, by = 0;
+let bvx = 0, bvy = 0;
+let phase3StartTime = 0;  // seconds when phase 3 began
+
+function bubbleSpeed() {
+  // Slowly ramps from SPEED_START to SPEED_MAX over 80 seconds
+  const elapsed = Math.max(0, time - phase3StartTime);
+  const t = Math.min(elapsed / 80, 1); // 0→1 over 80s
+  return SPEED_START + (SPEED_MAX - SPEED_START) * t;
 }
 
-// Each color has its own div and its own animated pixel position
-const quads = {}; // color -> { el, x, y, tx, ty, animating }
-COLORS.forEach((color, i) => {
-  const slots = getSlotPositions();
-  const d = document.createElement("div");
-  d.classList.add("quad");
-  d.style.background = color;
-  d.style.left = slots[i].x + "px";
-  d.style.top  = slots[i].y + "px";
-  mapEl.appendChild(d);
-  quads[color] = { el: d, x: slots[i].x, y: slots[i].y, tx: slots[i].x, ty: slots[i].y };
-});
+function initBubble() {
+  bx = playerX + playerSize / 2;
+  by = playerY + playerSize / 2;
+  randomVelocity();
+  placeBubble();
+}
 
-let currentColor = null;
-let nextColor    = null;
+function randomVelocity() {
+  const angle = Math.random() * Math.PI * 2;
+  const spd   = bubbleSpeed();
+  bvx = Math.cos(angle) * spd;
+  bvy = Math.sin(angle) * spd;
+}
 
-// ── Quad animation loop ────────────────────────────────────
-// We animate positions ourselves (no CSS transition) so we always
-// know the exact pixel position of each color during the slide.
+function placeBubble() {
+  bubbleEl.style.width  = (BUBBLE_R * 2) + "px";
+  bubbleEl.style.height = (BUBBLE_R * 2) + "px";
+  bubbleEl.style.left   = (bx - BUBBLE_R) + "px";
+  bubbleEl.style.top    = (by - BUBBLE_R) + "px";
+}
 
-const SLIDE_SPEED = 0.018; // lerp factor per frame — lower = slower
+function setBubbleColor(color) {
+  bubbleEl.style.background = color;
+}
 
-function animateQuads() {
-  COLORS.forEach(color => {
-    const q = quads[color];
-    q.x += (q.tx - q.x) * SLIDE_SPEED;
-    q.y += (q.ty - q.y) * SLIDE_SPEED;
-    q.el.style.left = q.x + "px";
-    q.el.style.top  = q.y + "px";
+function animateBubble() {
+  if (gameOver) return;
 
-    // Keep player's current color on top so it's always visible under player
-    if (color === currentColor) {
-      q.el.style.zIndex = 3;
-    } else {
-      q.el.style.zIndex = 1;
-    }
-  });
-  if (!gameOver) requestAnimationFrame(animateQuads);
+  // Gradually scale velocity toward current target speed each frame
+  const spd     = bubbleSpeed();
+  const curSpd  = Math.sqrt(bvx*bvx + bvy*bvy) || spd;
+  const scale   = spd / curSpd;
+  // Ease toward new speed (1% per frame so it's gradual)
+  bvx += (bvx * scale - bvx) * 0.01;
+  bvy += (bvy * scale - bvy) * 0.01;
+
+  bx += bvx;
+  by += bvy;
+  if (bx - BUBBLE_R < 0)                  { bx = BUBBLE_R;                     bvx =  Math.abs(bvx); }
+  if (bx + BUBBLE_R > window.innerWidth)  { bx = window.innerWidth - BUBBLE_R;  bvx = -Math.abs(bvx); }
+  if (by - BUBBLE_R < 0)                  { by = BUBBLE_R;                     bvy =  Math.abs(bvy); }
+  if (by + BUBBLE_R > window.innerHeight) { by = window.innerHeight - BUBBLE_R; bvy = -Math.abs(bvy); }
+  placeBubble();
+  requestAnimationFrame(animateBubble);
 }
 
 // ── Trail ──────────────────────────────────────────────────
-
 trailCanvas.width  = window.innerWidth;
 trailCanvas.height = window.innerHeight;
 window.addEventListener("resize", () => {
   trailCanvas.width  = window.innerWidth;
   trailCanvas.height = window.innerHeight;
-  // Reposition quads to new slot positions if not mid-swap
-  const slots = getSlotPositions();
-  COLORS.forEach((color, i) => {
-    quads[color].tx = slots[i].x;
-    quads[color].ty = slots[i].y;
-  });
 });
 
 let trailPath = [];
 const TRAIL_MAX = 50;
 
 function addTrailPoint(x, y) {
-  trailPath.push({ x, y });
+  trailPath.push({x, y});
   if (trailPath.length > TRAIL_MAX) trailPath.shift();
 }
-
 function drawTrail() {
   trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
   if (trailPath.length > 1) {
     for (let i = 1; i < trailPath.length; i++) {
-      const t  = i / trailPath.length; // 0=tail 1=head
-      const p0 = trailPath[i - 1];
-      const p1 = trailPath[i];
+      const t = i / trailPath.length;
+      const p0 = trailPath[i-1], p1 = trailPath[i];
       trailCtx.beginPath();
       trailCtx.moveTo(p0.x, p0.y);
       trailCtx.lineTo(p1.x, p1.y);
-      trailCtx.strokeStyle = `rgba(0,0,0,${t * 0.75})`;
-      trailCtx.lineWidth   = t * 22 + 3;
-      trailCtx.lineCap     = "round";
-      trailCtx.lineJoin    = "round";
+      trailCtx.strokeStyle = `rgba(0,0,0,${t*0.75})`;
+      trailCtx.lineWidth = t * 22 + 3;
+      trailCtx.lineCap = trailCtx.lineJoin = "round";
       trailCtx.stroke();
     }
   }
   if (!gameOver) requestAnimationFrame(drawTrail);
   else trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
 }
-
 function shrinkTrail() {
   if (!isDown && trailPath.length > 0) trailPath.shift();
   if (!gameOver) setTimeout(shrinkTrail, 25);
 }
 
 // ── Input ──────────────────────────────────────────────────
-
 function onDown(x, y) { isDown = true; lastX = x; lastY = y; }
 function onUp()        { isDown = false; }
-
 function onMove(x, y) {
   if (!isDown || gameOver) return;
-  const dx = x - lastX;
-  const dy = y - lastY;
+  const dx = x - lastX, dy = y - lastY;
   if (Math.sqrt(dx*dx + dy*dy) < 1) return;
-
-  if (!started) {
-    started = true;
-    hint.style.display = "none";
-    startGame();
-  }
-
+  if (!started) { started = true; hint.style.display = "none"; startGame(); }
   playerX = Math.max(0, Math.min(window.innerWidth  - playerSize, playerX + dx));
   playerY = Math.max(0, Math.min(window.innerHeight - playerSize, playerY + dy));
   playerEl.style.left = playerX + "px";
   playerEl.style.top  = playerY + "px";
   lastX = x; lastY = y;
-
-  addTrailPoint(playerX + playerSize / 2, playerY + playerSize / 2);
+  addTrailPoint(playerX + playerSize/2, playerY + playerSize/2);
 }
-
 document.addEventListener("mousedown",  e => onDown(e.clientX, e.clientY));
 document.addEventListener("mousemove",  e => onMove(e.clientX, e.clientY));
 document.addEventListener("mouseup",    () => onUp());
-document.addEventListener("touchstart", e => { const t = e.touches[0]; onDown(t.clientX, t.clientY); }, { passive: true });
-document.addEventListener("touchmove",  e => { e.preventDefault(); const t = e.touches[0]; onMove(t.clientX, t.clientY); }, { passive: false });
+document.addEventListener("touchstart", e => { const t=e.touches[0]; onDown(t.clientX,t.clientY); }, {passive:true});
+document.addEventListener("touchmove",  e => { e.preventDefault(); const t=e.touches[0]; onMove(t.clientX,t.clientY); }, {passive:false});
 document.addEventListener("touchend",   () => onUp());
 
-// ── Game start ─────────────────────────────────────────────
+// ── Begin game from start screen ──────────────────────────
+function beginGame(fromSecs) {
+  startOffset = fromSecs;
+  time = fromSecs;
+  startScreen.style.display = "none";
+  gameEl.style.display = "block";
+  updateTimerDisplay();
 
+  if (fromSecs >= 190) {
+    // Build phase 2 map then instantly switch to phase 3
+    buildPhase2Map(false);
+    phase2Active = true;
+    phase3Active = true;
+    activeColors = [...PHASE2_COLORS];
+    CYCLE_DURATION = 6000;
+    // Show red bg + bubble immediately
+    redBg.style.display  = "block";
+    mapEl.style.display  = "none";
+    bubbleEl.style.display = "block";
+    initBubble();
+    animateBubble();
+    // phase 3 starts with gray middle (10s grace in runCycle)
+    phase3StartTime = time;
+    middle.style.background = "gray";
+    currentColor = null;
+    core.style.background = "blue"; // preview first color
+    setBubbleColor("blue");
+  } else if (fromSecs >= 90) {
+    buildPhase2Map(false);
+    phase2Active = true;
+    activeColors = [...PHASE2_COLORS];
+    CYCLE_DURATION = 6000;
+  } else {
+    buildPhase1Map();
+  }
+}
+
+// ── Map builders ──────────────────────────────────────────
+function buildPhase1Map() {
+  mapEl.innerHTML = "";
+  colorAtPosition = [...PHASE1_COLORS];
+  PHASE1_COLORS.forEach((color, i) => {
+    const d = document.createElement("div");
+    d.classList.add("quad");
+    d.style.cssText = `background:${color};width:50%;height:50%;left:${POSITIONS_4[i].left};top:${POSITIONS_4[i].top};transition:none;`;
+    mapEl.appendChild(d);
+    quadDivs[color] = d;
+  });
+}
+function buildPhase2Map(animate) {
+  mapEl.innerHTML = "";
+  const tr = animate ? "left 1.5s ease,top 1.5s ease,width 1.5s ease,height 1.5s ease" : "none";
+  colorAtPosition = [...PHASE2_COLORS];
+  PHASE2_COLORS.forEach((color, i) => {
+    const d = document.createElement("div");
+    d.classList.add("quad");
+    d.style.cssText = `background:${color};width:33.333%;height:50%;left:${POSITIONS_6[i].left};top:${POSITIONS_6[i].top};transition:${tr};`;
+    mapEl.appendChild(d);
+    quadDivs[color] = d;
+  });
+}
+
+// ── Game start ─────────────────────────────────────────────
 function startGame() {
-  animateQuads();
   drawTrail();
   shrinkTrail();
   startTimer();
   startCheckColor();
-  startBackgroundSwap();
 
+  if (phase3Active) {
+    setBubbleColor("blue");
+    runCycle("blue");
+    return;
+  }
+  if (!phase2Active) startBackgroundSwap();
   currentColor = pickColor(null);
   nextColor    = pickColor(currentColor);
   setMiddle(null);
@@ -292,99 +330,243 @@ function startGame() {
 }
 
 // ── Color cycles ───────────────────────────────────────────
-
 function firstReveal() {
   if (gameOver) return;
-  setMiddle(currentColor);
-  setCore(nextColor);
+  setMiddle(currentColor); setCore(nextColor);
   setTimeout(() => { if (!gameOver) setMiddle(null); }, 4000);
   setTimeout(() => { runCycle(nextColor); },             5000);
 }
 
 function runCycle(incoming) {
   if (gameOver) return;
-  currentColor = incoming;
-  nextColor    = pickColor(currentColor);
-  setMiddle(currentColor);
-  setCore(nextColor);
-  setTimeout(() => { if (!gameOver) setMiddle(null); }, 9000);
-  setTimeout(() => { runCycle(nextColor); },             10000);
+  const myId = ++cycleId;
+
+  if (phase3Active) {
+    // Phase 3 is always blue — 10s gray → 13s blue → 1s gray → repeat
+    setMiddle(null);
+    core.style.background = "blue"; // preview
+    setBubbleColor("blue");
+
+    // t=10s: reveal blue
+    setTimeout(() => {
+      if (gameOver || cycleId !== myId) return;
+      currentColor = "blue";
+      middle.style.background = "blue";
+      core.style.background   = "blue";
+    }, 10000);
+
+    // t=23s: gray warning
+    setTimeout(() => {
+      if (gameOver || cycleId !== myId) return;
+      middle.style.background = "gray";
+      currentColor = null;
+    }, 23000);
+
+    // t=24s: next cycle
+    setTimeout(() => {
+      if (gameOver || cycleId !== myId) return;
+      runCycle("blue");
+    }, 24000);
+
+  } else {
+    currentColor = incoming;
+    nextColor    = pickColor(currentColor);
+    setMiddle(currentColor);
+    setCore(nextColor);
+
+    const grayAt = CYCLE_DURATION - 1000;
+    setTimeout(() => {
+      if (gameOver || cycleId !== myId) return;
+      setMiddle(null);
+    }, grayAt);
+    setTimeout(() => {
+      if (gameOver || cycleId !== myId) return;
+      runCycle(nextColor);
+    }, CYCLE_DURATION);
+  }
 }
 
-function setMiddle(color) {
-  middle.style.background = color || "gray";
-  currentColor = color;
-}
-function setCore(color) { core.style.background = color; }
+function setMiddle(color) { middle.style.background = color || "gray"; currentColor = color; }
+function setCore(color)   { core.style.background   = color || "gray"; }
 function pickColor(avoid) {
-  const pool = COLORS.filter(c => c !== avoid);
+  const pool = activeColors.filter(c => c !== avoid);
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
 // ── Timer ──────────────────────────────────────────────────
-
+function updateTimerDisplay() {
+  const mins = Math.floor(time / 60);
+  const secs = String(time % 60).padStart(2, "0");
+  timerEl.innerText = mins + ":" + secs;
+}
 function startTimer() {
   setInterval(() => {
     if (gameOver) return;
     time++;
-    const mins = Math.floor(time / 60);
-    const secs = String(time % 60).padStart(2, "0");
-    timerEl.innerText = mins + ":" + secs;
+    updateTimerDisplay();
+    if (time === 90  && !phase2Active) activatePhase2();
+    if (time === 190 && !phase3Active) activatePhase3();
+    if (time === 270 && phase3Active)  activatePhase1Again();
   }, 1000);
 }
 
-// ── Background swap ────────────────────────────────────────
+// ── Phase 2 at 1:30 ────────────────────────────────────────
+function activatePhase2() {
+  phase2Active = true;
+  if (bgSwapInterval) clearInterval(bgSwapInterval);
+  const D = 1500;
+  isTransitioning = true;
+  setTimeout(() => { isTransitioning = false; }, D);
 
-function startBackgroundSwap() {
-  setTimeout(() => { setInterval(swapBackgrounds, 8000); }, 15000);
+  PHASE1_COLORS.forEach((color, i) => {
+    const d = quadDivs[color];
+    d.style.transition = `left ${D}ms ease,top ${D}ms ease,width ${D}ms ease,height ${D}ms ease`;
+    d.style.width = "33.333%"; d.style.height = "50%";
+    d.style.left = POSITIONS_6[i].left; d.style.top = POSITIONS_6[i].top;
+    colorAtPosition[i] = color;
+  });
+  ["cyan","purple"].forEach((color, i) => {
+    const posIdx = 4 + i;
+    const d = document.createElement("div");
+    d.classList.add("quad");
+    d.style.cssText = `background:${color};width:33.333%;height:50%;left:${POSITIONS_6[posIdx].left};top:100%;transition:none;`;
+    mapEl.appendChild(d);
+    quadDivs[color] = d;
+    colorAtPosition[posIdx] = color;
+    setTimeout(() => { d.style.transition = `top ${D}ms ease`; d.style.top = POSITIONS_6[posIdx].top; }, 50);
+  });
+  activeColors   = [...PHASE2_COLORS];
+  CYCLE_DURATION = 6000;
+  runCycle(currentColor || pickColor(null));
 }
 
+// ── Phase 3 at 3:10 ────────────────────────────────────────
+function activatePhase3() {
+  phase3Active = true;
+  phase3StartTime = time;
+  if (bgSwapInterval) clearInterval(bgSwapInterval);
+
+  // Fade map panels to red then hide
+  Object.values(quadDivs).forEach(d => {
+    d.style.transition = "background 1.5s ease";
+    d.style.background = "red";
+  });
+  setTimeout(() => {
+    mapEl.style.display = "none";
+    redBg.style.display = "block";
+  }, 1500);
+
+  // Show the blue bubble
+  initBubble();
+  setTimeout(() => {
+    bubbleEl.style.display = "block";
+    animateBubble();
+  }, 1500);
+
+  // Lock middle to blue, start cycle
+  setTimeout(() => {
+    setBubbleColor("blue");
+    runCycle("blue");
+  }, 1500);
+}
+
+// ── Phase 1 again at 4:30 ─────────────────────────────────
+function activatePhase1Again() {
+  phase3Active = false;
+  phase2Active = false;
+  activeColors = [...PHASE1_COLORS];
+  CYCLE_DURATION = 10000;
+
+  // Hide bubble and red bg
+  bubbleEl.style.display = "none";
+  redBg.style.display    = "none";
+
+  // Rebuild phase 1 map
+  buildPhase1Map();
+  mapEl.style.display = "block";
+
+  // Restart cycle fresh
+  currentColor = pickColor(null);
+  nextColor    = pickColor(currentColor);
+  setMiddle(null);
+  setCore(currentColor);
+  setTimeout(() => {
+    if (gameOver) return;
+    setMiddle(currentColor);
+    setCore(nextColor);
+  }, 5000);
+
+  // Restart background swapping
+  startBackgroundSwap();
+}
+
+// ── Background swap (phase 1 only) ────────────────────────
+const SWAP_DURATION = 1500;
+function startBackgroundSwap() {
+  setTimeout(() => { bgSwapInterval = setInterval(swapBackgrounds, 8000); }, 30000);
+}
 function swapBackgrounds() {
-  const slots = getSlotPositions();
-  // Assign each color to a new random slot
-  const shuffledSlots = [...slots];
-  for (let i = shuffledSlots.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffledSlots[i], shuffledSlots[j]] = [shuffledSlots[j], shuffledSlots[i]];
+  if (phase2Active || phase3Active) return;
+  const shuffled = [...PHASE1_COLORS];
+  for (let i = shuffled.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  COLORS.forEach((color, i) => {
-    quads[color].tx = shuffledSlots[i].x;
-    quads[color].ty = shuffledSlots[i].y;
+  isTransitioning = true;
+  setTimeout(() => { isTransitioning = false; }, SWAP_DURATION);
+  shuffled.forEach((color, posIndex) => {
+    const d = quadDivs[color];
+    d.style.transition = `left ${SWAP_DURATION}ms ease,top ${SWAP_DURATION}ms ease`;
+    d.style.left = POSITIONS_4[posIndex].left;
+    d.style.top  = POSITIONS_4[posIndex].top;
+    colorAtPosition[posIndex] = color;
   });
 }
 
-// ── Color check — uses real pixel positions of each quad div ─
-
+// ── Color check ────────────────────────────────────────────
 function startCheckColor() {
   setInterval(() => {
-    if (gameOver || !currentColor) return;
+    if (gameOver || isTransitioning) return;
 
-    // Player center
-    const px = playerX + playerSize / 2;
-    const py = playerY + playerSize / 2;
-
-    // Check which color div the player center is inside RIGHT NOW
-    // We use the actual animated x,y of each quad
-    const hw = window.innerWidth  / 2;
-    const hh = window.innerHeight / 2;
-
-    let standing = null;
-    for (const color of COLORS) {
-      const q = quads[color];
-      if (px >= q.x && px < q.x + hw && py >= q.y && py < q.y + hh) {
-        standing = color;
-        break;
-      }
+    if (phase3Active) {
+      if (!currentColor) return; // gray phase = safe
+      // Player must be inside the bubble AND bubble color must match middle color
+      const px = playerX + playerSize / 2;
+      const py = playerY + playerSize / 2;
+      const dx = px - bx, dy = py - by;
+      if (Math.sqrt(dx*dx + dy*dy) > BUBBLE_R) triggerGameOver();
+      return;
     }
 
-    if (standing !== currentColor) {
-      gameOver = true;
-      playerEl.style.cursor = "default";
-      const mins = Math.floor(time / 60);
-      const secs = String(time % 60).padStart(2, "0");
-      setTimeout(() => alert("Game Over! זמן: " + mins + ":" + secs), 50);
+    if (!currentColor) return;
+    const rect = playerEl.getBoundingClientRect();
+    const cx = rect.left + rect.width  / 2;
+    const cy = rect.top  + rect.height / 2;
+    const w = window.innerWidth, h = window.innerHeight;
+
+    let q;
+    if (!phase2Active) {
+      if      (cx < w/2 && cy < h/2)  q = 0;
+      else if (cx >= w/2 && cy < h/2) q = 1;
+      else if (cx < w/2 && cy >= h/2) q = 2;
+      else                             q = 3;
+    } else {
+      const col = cx < w/3 ? 0 : cx < w*2/3 ? 1 : 2;
+      const row = cy < h/2 ? 0 : 1;
+      q = row * 3 + col;
     }
+    if (colorAtPosition[q] !== currentColor) triggerGameOver();
   }, 50);
+}
+
+function triggerGameOver() {
+  if (gameOver) return;
+  gameOver = true;
+  playerEl.style.cursor = "default";
+
+  const mins = Math.floor(time / 60);
+  const secs = String(time % 60).padStart(2, "0");
+  setTimeout(() => alert("Game Over! זמן: " + mins + ":" + secs), 50);
 }
 </script>
 </body>
