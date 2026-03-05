@@ -204,15 +204,30 @@ function updateTrails(){
 function startGame(){
   started = true;
 
+  // Both gray for 5 seconds
   middle.style.background = "gray";
   core.style.background = "gray";
 
   setTimeout(()=>{
     startTimer();
-    startColors();
     updateTrails();
     startBackgroundSwap();
     startCheckColor();
+
+    // Immediately show core preview of first coming color
+    core.style.background = colors[nextIndex];
+
+    // 2s later: core goes gray (1s warning)
+    setTimeout(()=>{ core.style.background = "gray"; }, 2000);
+
+    // 3s later: middle gets first color, cycle continues
+    setTimeout(()=>{
+      currentIndex = nextIndex;
+      nextIndex = (nextIndex + 1) % colors.length;
+      middle.style.background = colors[currentIndex];
+      // Start repeating cycle, first repeat in 10s
+      startColors();
+    }, 3000);
   }, 5000);
 }
 
@@ -223,18 +238,29 @@ function startTimer(){
 
 /* צבעי הדמות */
 function startColors(){
-  setInterval(()=>{
-    middle.style.background = "gray";
-    setTimeout(()=>{
-      currentIndex = nextIndex;
-      nextIndex = (nextIndex + 1) % colors.length;
-      middle.style.background = colors[currentIndex];
-    }, 2000);
-  }, 10000);
+  setInterval(runColorCycle, 10000);
+}
 
-  setInterval(()=>{
+function runColorCycle(){
+  // t=0: middle gets new color (currentIndex)
+  middle.style.background = colors[currentIndex];
+
+  // t=7s: core shows next color (preview, 3 seconds before change)
+  setTimeout(()=>{
     core.style.background = colors[nextIndex];
   }, 7000);
+
+  // t=9s: core goes gray (1 second warning before change)
+  setTimeout(()=>{
+    core.style.background = "gray";
+  }, 9000);
+
+  // t=10s: middle changes, advance indices (handled by next cycle start)
+  // We pre-advance here so next runColorCycle uses correct values
+  setTimeout(()=>{
+    currentIndex = nextIndex;
+    nextIndex = (nextIndex + 1) % colors.length;
+  }, 10000);
 }
 
 /* החלפת צבעי רקע אחרי 30 שניות */
