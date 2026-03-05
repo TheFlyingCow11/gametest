@@ -4,11 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
+* { box-sizing: border-box; }
 body {
   margin: 0;
   overflow: hidden;
   touch-action: none;
   font-family: Arial;
+  user-select: none;
 }
 #map {
   position: fixed;
@@ -28,6 +30,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: grab;
 }
 #frame {
   width: 100%;
@@ -72,6 +75,7 @@ body {
   background: black;
   padding: 4px 8px;
   border-radius: 6px;
+  z-index: 10;
 }
 #timer {
   position: fixed;
@@ -82,6 +86,20 @@ body {
   background: black;
   padding: 4px 8px;
   border-radius: 6px;
+  z-index: 10;
+}
+#hint {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 16px;
+  color: white;
+  background: rgba(0,0,0,0.6);
+  padding: 8px 16px;
+  border-radius: 8px;
+  z-index: 10;
+  pointer-events: none;
 }
 </style>
 </head>
@@ -95,68 +113,102 @@ body {
     </div>
   </div>
 </div>
-<div id="version">v1.7</div>
+<div id="version">v1.8</div>
 <div id="timer">0</div>
+<div id="hint">move to start</div>
 
 <script>
-const player  = document.getElementById("player");
-const middle  = document.getElementById("middle");
-const core    = document.getElementById("core");
-const map     = document.getElementById("map");
-const timerEl = document.getElementById("timer");
+const playerEl = document.getElementById("player");
+const middle   = document.getElementById("middle");
+const core     = document.getElementById("core");
+const map      = document.getElementById("map");
+const timerEl  = document.getElementById("timer");
+const hint     = document.getElementById("hint");
 
 let playerX = 200, playerY = 200;
 const playerSize = 60;
-let lastX = 0, lastY = 0;
-let touching = false;
-let started  = false;
-let gameOver = false;
-let trails   = [];
-let time     = 0;
 
+let lastX = 0, lastY = 0;
+let isDown  = false;  // mouse button or finger is held
+let started = false;
+let gameOver = false;
+let trails  = [];
+let time    = 0;
+
+// 4 colors for the 4 quadrants
 const COLORS = ["#ff6b6b", "#4dabf7", "#51cf66", "#ffd43b"];
 let quadColors = [...COLORS];
-let middleColorIndex = 0;
-let nextColorIndex   = 1;
 
-// ── Touch ──────────────────────────────────────────────────
-document.addEventListener("touchstart", e => {
-  touching = true;
-  const t = e.touches[0];
-  lastX = t.clientX;
-  lastY = t.clientY;
-  if (!started) startGame();
-});
+// current color showing on middle, and the upcoming one
+let currentColor = null;   // null = gray
+let nextColor    = null;
 
-document.addEventListener("touchend", () => { touching = false; });
+// ── Pointer unification (mouse + touch) ───────────────────
 
-document.addEventListener("touchmove", e => {
-  if (!touching || gameOver) return;
-  e.preventDefault();
-  const t  = e.touches[0];
-  const dx = t.clientX - lastX;
-  const dy = t.clientY - lastY;
+function onDown(x, y) {
+  isDown = true;
+  lastX = x;
+  lastY = y;
+}
+
+function onMove(x, y) {
+  if (!isDown || gameOver) return;
+
+  const dx = x - lastX;
+  const dy = y - lastY;
   const speed = Math.sqrt(dx*dx + dy*dy);
+
+  if (speed < 1) return;
+
+  // Start game on first real movement
+  if (!started) {
+    started = true;
+    hint.style.display = "none";
+    startGame();
+  }
 
   playerX = Math.max(0, Math.min(window.innerWidth  - playerSize, playerX + dx));
   playerY = Math.max(0, Math.min(window.innerHeight - playerSize, playerY + dy));
+  playerEl.style.left = playerX + "px";
+  playerEl.style.top  = playerY + "px";
 
-  player.style.left = playerX + "px";
-  player.style.top  = playerY + "px";
-  lastX = t.clientX;
-  lastY = t.clientY;
+  lastX = x;
+  lastY = y;
 
-  if (speed > 5) {
-    const tr = document.createElement("div");
-    tr.classList.add("trail");
-    tr.style.left = (playerX + 22) + "px";
-    tr.style.top  = (playerY + 22) + "px";
-    document.body.appendChild(tr);
-    trails.push({ el: tr, life: 10 });
-  }
+  if (speed > 5) spawnTrail();
+}
+
+function onUp() { isDown = false; }
+
+// Mouse
+document.addEventListener("mousedown", e => onDown(e.clientX, e.clientY));
+document.addEventListener("mousemove", e => onMove(e.clientX, e.clientY));
+document.addEventListener("mouseup",   () => onUp());
+
+// Touch
+document.addEventListener("touchstart", e => {
+  const t = e.touches[0];
+  onDown(t.clientX, t.clientY);
+}, { passive: true });
+
+document.addEventListener("touchmove", e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  onMove(t.clientX, t.clientY);
 }, { passive: false });
 
+document.addEventListener("touchend", () => onUp());
+
 // ── Trails ─────────────────────────────────────────────────
+function spawnTrail() {
+  const tr = document.createElement("div");
+  tr.classList.add("trail");
+  tr.style.left = (playerX + 22) + "px";
+  tr.style.top  = (playerY + 22) + "px";
+  document.body.appendChild(tr);
+  trails.push({ el: tr, life: 10 });
+}
+
 function updateTrails() {
   for (let i = trails.length - 1; i >= 0; i--) {
     const tr = trails[i];
@@ -167,47 +219,73 @@ function updateTrails() {
   if (!gameOver) requestAnimationFrame(updateTrails);
 }
 
-// ── Start ──────────────────────────────────────────────────
+// ── Game start ─────────────────────────────────────────────
 function startGame() {
-  started = true;
-  middle.style.background = "gray";
-  core.style.background   = "gray";
   updateTrails();
+  startTimer();
+  startCheckColor();
+  startBackgroundSwap();
 
-  setTimeout(() => {
-    startTimer();
-    startBackgroundSwap();
-    startCheckColor();
-    runCycle();
-  }, 5000);
+  // Begin first color cycle immediately (5s gray → color)
+  scheduleNextCycle();
 }
 
 // ── Color cycle ────────────────────────────────────────────
-// Each cycle = 10 seconds:
-//  t+0s  middle shows current color, core = gray
-//  t+7s  core shows NEXT color (3s preview)
-//  t+9s  core goes gray (1s warning)
-//  t+10s advance indices, repeat
-function runCycle() {
+// Timeline per cycle (10s total):
+//   t+0s   middle = gray (for 5s)
+//   t+5s   middle = currentColor
+//   t+7s   core   = nextColor  (3s preview before change)
+//   t+9s   middle = gray       (1s warning before change)
+//   t+10s  → new cycle starts
+
+function scheduleNextCycle() {
   if (gameOver) return;
 
-  middle.style.background = COLORS[middleColorIndex];
-  core.style.background   = "gray";
+  // Pick a new color for this cycle
+  currentColor = pickNextColor(currentColor);
+  // Pick what comes after (for core preview)
+  nextColor = pickNextColor(currentColor);
 
-  setTimeout(() => {
-    if (!gameOver) core.style.background = COLORS[nextColorIndex];
-  }, 7000);
+  // t=0: middle is gray
+  setMiddle(null);
+  setCore(null);
 
-  setTimeout(() => {
-    if (!gameOver) core.style.background = "gray";
-  }, 9000);
-
+  // t=5s: middle shows current color
   setTimeout(() => {
     if (gameOver) return;
-    middleColorIndex = nextColorIndex;
-    nextColorIndex   = (nextColorIndex + 1) % COLORS.length;
-    runCycle();
+    setMiddle(currentColor);
+  }, 5000);
+
+  // t=7s: core previews next color
+  setTimeout(() => {
+    if (gameOver) return;
+    setCore(nextColor);
+  }, 7000);
+
+  // t=9s: middle goes gray (1s warning)
+  setTimeout(() => {
+    if (gameOver) return;
+    setMiddle(null);
+    setCore(null);
+  }, 9000);
+
+  // t=10s: next cycle
+  setTimeout(() => {
+    scheduleNextCycle();
   }, 10000);
+}
+
+// Pick a random color different from the last one
+function pickNextColor(avoid) {
+  const pool = COLORS.filter(c => c !== avoid);
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function setMiddle(color) {
+  middle.style.background = color || "gray";
+}
+function setCore(color) {
+  core.style.background = color || "gray";
 }
 
 // ── Timer ──────────────────────────────────────────────────
@@ -217,12 +295,15 @@ function startTimer() {
   }, 1000);
 }
 
-// ── Background swap ────────────────────────────────────────
+// ── Background swap after 30s ──────────────────────────────
 function startBackgroundSwap() {
   setTimeout(() => {
     setInterval(() => {
-      let tmp = quadColors[0]; quadColors[0] = quadColors[1]; quadColors[1] = tmp;
-      tmp = quadColors[2]; quadColors[2] = quadColors[3]; quadColors[3] = tmp;
+      // Shuffle quadrant colors
+      for (let i = quadColors.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [quadColors[i], quadColors[j]] = [quadColors[j], quadColors[i]];
+      }
       map.style.background =
         `linear-gradient(to right, ${quadColors[0]} 50%, ${quadColors[1]} 50%),
          linear-gradient(to bottom, transparent 50%, ${quadColors[2]} 50%)`;
@@ -235,25 +316,31 @@ function startBackgroundSwap() {
 function startCheckColor() {
   setInterval(() => {
     if (gameOver) return;
-    if (middle.style.background === "gray") return;
+    if (!currentColor) return;           // gray phase = safe
+    if (middle.style.background === "gray") return; // gray phase = safe
 
-    const rect = player.getBoundingClientRect();
+    const rect = playerEl.getBoundingClientRect();
     const cx = rect.left + rect.width  / 2;
     const cy = rect.top  + rect.height / 2;
     const w  = window.innerWidth;
     const h  = window.innerHeight;
 
     let q;
-    if      (cx < w/2 && cy < h/2)  q = 0;
-    else if (cx >= w/2 && cy < h/2) q = 1;
-    else if (cx < w/2 && cy >= h/2) q = 2;
-    else                             q = 3;
+    if      (cx <  w/2 && cy <  h/2) q = 0;
+    else if (cx >= w/2 && cy <  h/2) q = 1;
+    else if (cx <  w/2 && cy >= h/2) q = 2;
+    else                              q = 3;
 
-    if (quadColors[q] !== COLORS[middleColorIndex]) {
-      gameOver = true;
-      setTimeout(() => alert("Game Over! זמן: " + time + "s"), 50);
+    if (quadColors[q] !== currentColor) {
+      triggerGameOver();
     }
   }, 50);
+}
+
+function triggerGameOver() {
+  gameOver = true;
+  playerEl.style.cursor = "default";
+  setTimeout(() => alert("Game Over! זמן: " + time + "s"), 50);
 }
 </script>
 </body>
