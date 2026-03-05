@@ -46,7 +46,7 @@ justify-content:center;
 #middle{
 width:70%;
 height:70%;
-background:gray; /* אפור בתחילת המשחק */
+background:gray;
 border-radius:8px;
 display:flex;
 align-items:center;
@@ -108,7 +108,7 @@ border-radius:6px;
 </div>
 </div>
 
-<div id="version">v1.5</div>
+<div id="version">v1.6</div>
 <div id="timer">0</div>
 
 <script>
@@ -131,164 +131,147 @@ let trails = [];
 let colors = ["#ff6b6b","#4dabf7","#51cf66","#ffffff"];
 let currentIndex = 0;
 let nextIndex = 1;
-let bgIndex = 0;
 
 let time = 0;
 let timer = document.getElementById("timer");
 let gameOver = false;
 
-/* בדיקה אם קרוב לדמות */
-function isNearPlayer(x,y){
-let rect = player.getBoundingClientRect();
-return x >= rect.left-20 && x <= rect.right+20 &&
-       y >= rect.top-20 && y <= rect.bottom+20;
-}
-
-/* התחלת נגיעה */
+/* התחלת נגיעה – מכל מקום על המסך */
 document.addEventListener("touchstart", e=>{
-let t = e.touches[0];
-if(isNearPlayer(t.clientX,t.clientY)){
-touching = true;
-if(!started) startGame();
-lastX = t.clientX;
-lastY = t.clientY;
-}
+  touching = true;
+  if(!started) startGame();
+  let t = e.touches[0];
+  lastX = t.clientX;
+  lastY = t.clientY;
 });
 
 /* סוף נגיעה */
 document.addEventListener("touchend", ()=>{
-touching = false;
+  touching = false;
 });
 
 /* תנועה */
 document.addEventListener("touchmove", e=>{
-if(!touching || gameOver) return;
-e.preventDefault();
-let t = e.touches[0];
-let dx = t.clientX - lastX;
-let dy = t.clientY - lastY;
-let speed = Math.sqrt(dx*dx + dy*dy);
+  if(!touching || gameOver) return;
+  e.preventDefault();
+  let t = e.touches[0];
+  let dx = t.clientX - lastX;
+  let dy = t.clientY - lastY;
+  let speed = Math.sqrt(dx*dx + dy*dy);
 
-playerX += dx;
-playerY += dy;
+  playerX += dx;
+  playerY += dy;
 
-let maxX = window.innerWidth - playerSize;
-let maxY = window.innerHeight - playerSize;
+  let maxX = window.innerWidth - playerSize;
+  let maxY = window.innerHeight - playerSize;
 
-if(playerX < 0) playerX = 0;
-if(playerY < 0) playerY = 0;
-if(playerX > maxX) playerX = maxX;
-if(playerY > maxY) playerY = maxY;
+  if(playerX < 0) playerX = 0;
+  if(playerY < 0) playerY = 0;
+  if(playerX > maxX) playerX = maxX;
+  if(playerY > maxY) playerY = maxY;
 
-player.style.left = playerX + "px";
-player.style.top = playerY + "px";
+  player.style.left = playerX + "px";
+  player.style.top = playerY + "px";
 
-lastX = t.clientX;
-lastY = t.clientY;
+  lastX = t.clientX;
+  lastY = t.clientY;
 
-/* trail – זנב שחור */
-if(speed>5){
-let tr = document.createElement("div");
-tr.classList.add("trail");
-tr.style.left = (playerX+20) + "px";
-tr.style.top = (playerY+20) + "px";
-document.body.appendChild(tr);
-trails.push({el:tr,life:10});
-}
+  /* trail – זנב שחור */
+  if(speed > 5){
+    let tr = document.createElement("div");
+    tr.classList.add("trail");
+    tr.style.left = (playerX + 20) + "px";
+    tr.style.top = (playerY + 20) + "px";
+    document.body.appendChild(tr);
+    trails.push({el: tr, life: 10});
+  }
 });
 
 /* עדכון trails */
 function updateTrails(){
-for(let i=trails.length-1;i>=0;i--){
-let tr = trails[i];
-tr.life--;
-tr.el.style.opacity = tr.life/10*0.4;
-tr.el.style.left = parseFloat(tr.el.style.left)+(Math.random()*2-1)+"px";
-tr.el.style.top = parseFloat(tr.el.style.top)+(Math.random()*2-1)+"px";
-if(tr.life<=0){tr.el.remove(); trails.splice(i,1);}
-}
-if(!gameOver) requestAnimationFrame(updateTrails);
+  for(let i = trails.length-1; i >= 0; i--){
+    let tr = trails[i];
+    tr.life--;
+    tr.el.style.opacity = tr.life / 10 * 0.4;
+    tr.el.style.left = parseFloat(tr.el.style.left) + (Math.random()*2-1) + "px";
+    tr.el.style.top  = parseFloat(tr.el.style.top)  + (Math.random()*2-1) + "px";
+    if(tr.life <= 0){ tr.el.remove(); trails.splice(i,1); }
+  }
+  if(!gameOver) requestAnimationFrame(updateTrails);
 }
 
 /* התחלת המשחק */
 function startGame(){
-started = true;
+  started = true;
 
-/* 5 שניות פתיחה אפור */
-middle.style.background = "gray";
-core.style.background = "gray";
+  middle.style.background = "gray";
+  core.style.background = "gray";
 
-setTimeout(()=>{
-startTimer();
-startColors();
-updateTrails();
-startBackgroundSwap();
-startCheckColor();
-},5000);
+  setTimeout(()=>{
+    startTimer();
+    startColors();
+    updateTrails();
+    startBackgroundSwap();
+    startCheckColor();
+  }, 5000);
 }
 
 /* טיימר */
 function startTimer(){
-setInterval(()=>{time++; timer.innerText = time+"s";},1000);
+  setInterval(()=>{ time++; timer.innerText = time + "s"; }, 1000);
 }
 
 /* צבעי הדמות */
 function startColors(){
-setInterval(()=>{
-// 2 שניות לפני, צבע אפור
-middle.style.background = "gray";
-setTimeout(()=>{
-currentIndex = nextIndex;
-nextIndex = (nextIndex+1)%colors.length;
-middle.style.background = colors[currentIndex];
-},2000);
-},10000);
+  setInterval(()=>{
+    middle.style.background = "gray";
+    setTimeout(()=>{
+      currentIndex = nextIndex;
+      nextIndex = (nextIndex + 1) % colors.length;
+      middle.style.background = colors[currentIndex];
+    }, 2000);
+  }, 10000);
 
-setInterval(()=>{
-core.style.background = colors[nextIndex];
-},7000);
+  setInterval(()=>{
+    core.style.background = colors[nextIndex];
+  }, 7000);
 }
 
 /* החלפת צבעי רקע אחרי 30 שניות */
 function startBackgroundSwap(){
-setTimeout(()=>{
-setInterval(()=>{
-// החלפה בין צבעים
-let tmp = colors[0];
-colors[0] = colors[1];
-colors[1] = tmp;
-tmp = colors[2];
-colors[2] = colors[3];
-colors[3] = tmp;
+  setTimeout(()=>{
+    setInterval(()=>{
+      let tmp = colors[0]; colors[0] = colors[1]; colors[1] = tmp;
+      tmp = colors[2]; colors[2] = colors[3]; colors[3] = tmp;
 
-map.style.background =
-`linear-gradient(to right,${colors[0]} 50%,${colors[1]} 50%),
- linear-gradient(to bottom,transparent 50%,${colors[2]} 50%)`;
-},8000);
-},30000);
+      map.style.background =
+        `linear-gradient(to right,${colors[0]} 50%,${colors[1]} 50%),
+         linear-gradient(to bottom,transparent 50%,${colors[2]} 50%)`;
+    }, 8000);
+  }, 30000);
 }
 
 /* בדיקה אם הדמות על צבע נכון */
 function startCheckColor(){
-setInterval(()=>{
-if(gameOver) return;
-let middleColor = middle.style.background;
-if(middleColor==="gray") return; // אפור – מותר על כל צבע
-let rect = player.getBoundingClientRect();
-let x = rect.left + rect.width/2;
-let y = rect.top + rect.height/2;
-let w = window.innerWidth;
-let h = window.innerHeight;
-let bgColor;
-if(x<w/2 && y<h/2) bgColor = colors[0];
-else if(x>=w/2 && y<h/2) bgColor = colors[1];
-else if(x<w/2 && y>=h/2) bgColor = colors[2];
-else bgColor = colors[3];
-if(bgColor!==middleColor){
-gameOver = true;
-alert("Game Over! צבע לא תואם.");
-}
-},50);
+  setInterval(()=>{
+    if(gameOver) return;
+    let middleColor = middle.style.background;
+    if(middleColor === "gray") return;
+    let rect = player.getBoundingClientRect();
+    let x = rect.left + rect.width / 2;
+    let y = rect.top + rect.height / 2;
+    let w = window.innerWidth;
+    let h = window.innerHeight;
+    let bgColor;
+    if(x < w/2 && y < h/2)       bgColor = colors[0];
+    else if(x >= w/2 && y < h/2)  bgColor = colors[1];
+    else if(x < w/2 && y >= h/2)  bgColor = colors[2];
+    else                           bgColor = colors[3];
+    if(bgColor !== middleColor){
+      gameOver = true;
+      alert("Game Over! צבע לא תואם.");
+    }
+  }, 50);
 }
 
 </script>
