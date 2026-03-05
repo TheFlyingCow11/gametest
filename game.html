@@ -5,64 +5,98 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
+
 body{
-    margin:0;
-    overflow:hidden;
-    touch-action:none;
-    background:#87CEEB;
+margin:0;
+overflow:hidden;
+touch-action:none;
 }
 
-#player{
-    width:60px;
-    height:60px;
-    background:red;
-    position:absolute;
-    left:150px;
-    top:200px;
-    border-radius:15px;
+/* רקע של 4 רבעים */
+#map{
+position:fixed;
+width:100vw;
+height:100vh;
+background:
+linear-gradient(to right,
+#ff6b6b 50%,
+#4dabf7 50%),
+linear-gradient(to bottom,
+transparent 50%,
+#51cf66 50%);
+background-blend-mode:multiply;
 }
+
+/* הדמות */
+#player{
+width:60px;
+height:60px;
+background:black;
+position:absolute;
+left:200px;
+top:200px;
+border-radius:12px;
+}
+
 </style>
 </head>
 
 <body>
 
+<div id="map"></div>
 <div id="player"></div>
 
 <script>
 
 let player = document.getElementById("player");
 
-let playerX = 150;
+let playerX = 200;
 let playerY = 200;
 
-let lastX = 0;
-let lastY = 0;
+let speedX = 0;
+let speedY = 0;
 
-document.addEventListener("touchstart", function(e){
-    let touch = e.touches[0];
-    lastX = touch.clientX;
-    lastY = touch.clientY;
+let startX = 0;
+let startY = 0;
+
+document.addEventListener("touchstart", e=>{
+let t = e.touches[0];
+startX = t.clientX;
+startY = t.clientY;
 });
 
-document.addEventListener("touchmove", function(e){
+document.addEventListener("touchmove", e=>{
 
-    e.preventDefault(); // מונע גלילה
+e.preventDefault();
 
-    let touch = e.touches[0];
+let t = e.touches[0];
 
-    let dx = touch.clientX - lastX;
-    let dy = touch.clientY - lastY;
+let dx = t.clientX - startX;
+let dy = t.clientY - startY;
 
-    playerX += dx;
-    playerY += dy;
-
-    player.style.left = playerX + "px";
-    player.style.top = playerY + "px";
-
-    lastX = touch.clientX;
-    lastY = touch.clientY;
+/* כמה מהר הדמות תזוז */
+speedX = dx * 0.1;
+speedY = dy * 0.1;
 
 });
+
+document.addEventListener("touchend", ()=>{
+speedX = 0;
+speedY = 0;
+});
+
+function gameLoop(){
+
+playerX += speedX;
+playerY += speedY;
+
+player.style.left = playerX + "px";
+player.style.top = playerY + "px";
+
+requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
 
 </script>
 
