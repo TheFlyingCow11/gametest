@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
+
 body{
 margin:0;
 overflow:hidden;
 touch-action:none;
+font-family:Arial;
 }
 
 /* רקע 4 רבעים */
@@ -36,6 +38,30 @@ left:200px;
 top:200px;
 border-radius:12px;
 }
+
+/* HUD */
+#version{
+position:fixed;
+top:5px;
+left:10px;
+font-size:14px;
+color:white;
+background:black;
+padding:4px 8px;
+border-radius:6px;
+}
+
+#timer{
+position:fixed;
+top:5px;
+right:10px;
+font-size:14px;
+color:white;
+background:black;
+padding:4px 8px;
+border-radius:6px;
+}
+
 </style>
 </head>
 
@@ -44,6 +70,9 @@ border-radius:12px;
 <div id="map"></div>
 <div id="player"></div>
 
+<div id="version">v1.0</div>
+<div id="timer">0</div>
+
 <script>
 
 let player = document.getElementById("player");
@@ -51,9 +80,12 @@ let player = document.getElementById("player");
 let playerX = 200;
 let playerY = 200;
 
+let playerSize = 60;
+
 let lastX = 0;
 let lastY = 0;
 
+/* תנועה */
 document.addEventListener("touchstart", e=>{
 let t = e.touches[0];
 lastX = t.clientX;
@@ -72,6 +104,16 @@ let dy = t.clientY - lastY;
 playerX += dx;
 playerY += dy;
 
+/* גבולות מסך */
+
+let maxX = window.innerWidth - playerSize;
+let maxY = window.innerHeight - playerSize;
+
+if(playerX < 0) playerX = 0;
+if(playerY < 0) playerY = 0;
+if(playerX > maxX) playerX = maxX;
+if(playerY > maxY) playerY = maxY;
+
 player.style.left = playerX + "px";
 player.style.top = playerY + "px";
 
@@ -79,6 +121,16 @@ lastX = t.clientX;
 lastY = t.clientY;
 
 });
+
+/* טיימר */
+
+let time = 0;
+let timer = document.getElementById("timer");
+
+setInterval(()=>{
+time++;
+timer.innerText = time + "s";
+},1000);
 
 </script>
 
