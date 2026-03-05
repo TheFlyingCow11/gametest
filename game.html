@@ -5,14 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-
 body{
 margin:0;
 overflow:hidden;
 touch-action:none;
 }
 
-/* רקע של 4 רבעים */
+/* רקע 4 רבעים */
 #map{
 position:fixed;
 width:100vw;
@@ -37,7 +36,6 @@ left:200px;
 top:200px;
 border-radius:12px;
 }
-
 </style>
 </head>
 
@@ -53,16 +51,13 @@ let player = document.getElementById("player");
 let playerX = 200;
 let playerY = 200;
 
-let speedX = 0;
-let speedY = 0;
-
-let startX = 0;
-let startY = 0;
+let lastX = 0;
+let lastY = 0;
 
 document.addEventListener("touchstart", e=>{
 let t = e.touches[0];
-startX = t.clientX;
-startY = t.clientY;
+lastX = t.clientX;
+lastY = t.clientY;
 });
 
 document.addEventListener("touchmove", e=>{
@@ -71,32 +66,19 @@ e.preventDefault();
 
 let t = e.touches[0];
 
-let dx = t.clientX - startX;
-let dy = t.clientY - startY;
+let dx = t.clientX - lastX;
+let dy = t.clientY - lastY;
 
-/* כמה מהר הדמות תזוז */
-speedX = dx * 0.1;
-speedY = dy * 0.1;
-
-});
-
-document.addEventListener("touchend", ()=>{
-speedX = 0;
-speedY = 0;
-});
-
-function gameLoop(){
-
-playerX += speedX;
-playerY += speedY;
+playerX += dx;
+playerY += dy;
 
 player.style.left = playerX + "px";
 player.style.top = playerY + "px";
 
-requestAnimationFrame(gameLoop);
-}
+lastX = t.clientX;
+lastY = t.clientY;
 
-gameLoop();
+});
 
 </script>
 
