@@ -13,7 +13,7 @@ touch-action:none;
 font-family:Arial;
 }
 
-/* רקע 4 רבעים */
+/* רקע */
 
 #map{
 position:fixed;
@@ -25,7 +25,7 @@ linear-gradient(to bottom,transparent 50%,#51cf66 50%);
 background-blend-mode:multiply;
 }
 
-/* הדמות */
+/* דמות */
 
 #player{
 width:60px;
@@ -65,6 +65,19 @@ background:#ff6b6b;
 border-radius:6px;
 }
 
+/* אש */
+
+#trail{
+position:absolute;
+width:40px;
+height:40px;
+background:orange;
+border-radius:50%;
+opacity:0;
+pointer-events:none;
+filter:blur(10px);
+}
+
 /* HUD */
 
 #version{
@@ -96,6 +109,8 @@ border-radius:6px;
 
 <div id="map"></div>
 
+<div id="trail"></div>
+
 <div id="player">
 <div id="frame">
 <div id="middle">
@@ -104,7 +119,7 @@ border-radius:6px;
 </div>
 </div>
 
-<div id="version">v1.2</div>
+<div id="version">v1.3</div>
 <div id="timer">0</div>
 
 <script>
@@ -112,6 +127,8 @@ border-radius:6px;
 let player = document.getElementById("player");
 let middle = document.getElementById("middle");
 let core = document.getElementById("core");
+let trail = document.getElementById("trail");
+let map = document.getElementById("map");
 
 let playerX = 200;
 let playerY = 200;
@@ -120,9 +137,10 @@ let playerSize = 60;
 let lastX = 0;
 let lastY = 0;
 
+let touchingPlayer = false;
 let started = false;
 
-/* צבעי הרקע */
+/* צבעים */
 
 let colors = [
 "#ff6b6b",
@@ -131,22 +149,43 @@ let colors = [
 "#ffffff"
 ];
 
+let bgIndex = 0;
+
 let currentIndex = 0;
 let nextIndex = 1;
 
-/* התחלת המשחק */
+/* התחלת נגיעה */
 
-player.addEventListener("touchstart", e=>{
+document.addEventListener("touchstart", e=>{
+
+let t = e.touches[0];
+let rect = player.getBoundingClientRect();
+
+if(
+t.clientX >= rect.left &&
+t.clientX <= rect.right &&
+t.clientY >= rect.top &&
+t.clientY <= rect.bottom
+){
+
+touchingPlayer = true;
 
 if(!started){
-
 startGame();
+}
+
+lastX = t.clientX;
+lastY = t.clientY;
 
 }
 
-let t = e.touches[0];
-lastX = t.clientX;
-lastY = t.clientY;
+});
+
+/* סוף נגיעה */
+
+document.addEventListener("touchend", ()=>{
+
+touchingPlayer = false;
 
 });
 
@@ -154,7 +193,7 @@ lastY = t.clientY;
 
 document.addEventListener("touchmove", e=>{
 
-if(!started) return;
+if(!touchingPlayer) return;
 
 e.preventDefault();
 
@@ -163,8 +202,12 @@ let t = e.touches[0];
 let dx = t.clientX - lastX;
 let dy = t.clientY - lastY;
 
+let speed = Math.sqrt(dx*dx + dy*dy);
+
 playerX += dx;
 playerY += dy;
+
+/* גבולות */
 
 let maxX = window.innerWidth - playerSize;
 let maxY = window.innerHeight - playerSize;
@@ -177,12 +220,26 @@ if(playerY > maxY) playerY = maxY;
 player.style.left = playerX + "px";
 player.style.top = playerY + "px";
 
+/* אש */
+
+if(speed > 15){
+
+trail.style.opacity = 0.7;
+trail.style.left = playerX + 10 + "px";
+trail.style.top = playerY + 10 + "px";
+
+setTimeout(()=>{
+trail.style.opacity = 0;
+},100);
+
+}
+
 lastX = t.clientX;
 lastY = t.clientY;
 
 });
 
-/* התחלת מערכות המשחק */
+/* התחלת משחק */
 
 function startGame(){
 
@@ -190,6 +247,7 @@ started = true;
 
 startTimer();
 startColors();
+startBackgroundChange();
 
 }
 
@@ -209,7 +267,7 @@ timer.innerText = time + "s";
 
 }
 
-/* שינוי צבעים */
+/* שינוי צבע הדמות */
 
 function startColors(){
 
@@ -227,6 +285,31 @@ setInterval(()=>{
 core.style.background = colors[nextIndex];
 
 },7000);
+
+}
+
+/* שינוי רקע אחרי 30 שניות */
+
+function startBackgroundChange(){
+
+setTimeout(()=>{
+
+setInterval(()=>{
+
+bgIndex++;
+bgIndex %= colors.length;
+
+let c1 = colors[bgIndex];
+let c2 = colors[(bgIndex+1)%colors.length];
+let c3 = colors[(bgIndex+2)%colors.length];
+
+map.style.background =
+`linear-gradient(to right,${c1} 50%,${c2} 50%),
+ linear-gradient(to bottom,transparent 50%,${c3} 50%)`;
+
+},8000);
+
+},30000);
 
 }
 
