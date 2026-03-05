@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>משחק מגע</title>
+
+<style>
+body{
+    margin:0;
+    overflow:hidden;
+    background:#87CEEB;
+}
+
+#player{
+    width:60px;
+    height:60px;
+    background:red;
+    position:absolute;
+    left:100px;
+    top:100px;
+    border-radius:15px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="player"></div>
+
+<script>
+
+let player = document.getElementById("player");
+
+document.addEventListener("touchmove", function(e){
+
+    let touch = e.touches[0];
+
+    player.style.left = touch.clientX - 30 + "px";
+    player.style.top = touch.clientY - 30 + "px";
+
+});
+
+</script>
+
+</body>
+</html>
