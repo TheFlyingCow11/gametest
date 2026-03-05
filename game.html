@@ -5,15 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-
 body{
 margin:0;
 overflow:hidden;
 touch-action:none;
 font-family:Arial;
 }
-
-/* רקע */
 
 #map{
 position:fixed;
@@ -24,8 +21,6 @@ linear-gradient(to right,#ff6b6b 50%,#4dabf7 50%),
 linear-gradient(to bottom,transparent 50%,#51cf66 50%);
 background-blend-mode:multiply;
 }
-
-/* דמות */
 
 #player{
 width:60px;
@@ -65,20 +60,17 @@ background:#ff6b6b;
 border-radius:6px;
 }
 
-/* אש */
-
-#trail{
+.trail{
 position:absolute;
-width:40px;
-height:40px;
+width:20px;
+height:20px;
 background:orange;
 border-radius:50%;
-opacity:0;
+opacity:0.5;
 pointer-events:none;
-filter:blur(10px);
+filter:blur(8px);
+transition: opacity 0.3s;
 }
-
-/* HUD */
 
 #version{
 position:fixed;
@@ -104,12 +96,9 @@ border-radius:6px;
 
 </style>
 </head>
-
 <body>
 
 <div id="map"></div>
-
-<div id="trail"></div>
 
 <div id="player">
 <div id="frame">
@@ -119,7 +108,7 @@ border-radius:6px;
 </div>
 </div>
 
-<div id="version">v1.3</div>
+<div id="version">v1.4</div>
 <div id="timer">0</div>
 
 <script>
@@ -127,7 +116,6 @@ border-radius:6px;
 let player = document.getElementById("player");
 let middle = document.getElementById("middle");
 let core = document.getElementById("core");
-let trail = document.getElementById("trail");
 let map = document.getElementById("map");
 
 let playerX = 200;
@@ -137,77 +125,53 @@ let playerSize = 60;
 let lastX = 0;
 let lastY = 0;
 
-let touchingPlayer = false;
+let touching = false;
 let started = false;
 
-/* צבעים */
-
-let colors = [
-"#ff6b6b",
-"#4dabf7",
-"#51cf66",
-"#ffffff"
-];
-
-let bgIndex = 0;
-
+let colors = ["#ff6b6b","#4dabf7","#51cf66","#ffffff"];
 let currentIndex = 0;
 let nextIndex = 1;
 
-/* התחלת נגיעה */
+/* trail system */
+let trails = [];
 
-document.addEventListener("touchstart", e=>{
+/* טיימר */
+let time = 0;
+let timer = document.getElementById("timer");
 
-let t = e.touches[0];
+/* בדיקת התחלה קרובה לדמות */
+function isNearPlayer(x,y){
 let rect = player.getBoundingClientRect();
-
-if(
-t.clientX >= rect.left &&
-t.clientX <= rect.right &&
-t.clientY >= rect.top &&
-t.clientY <= rect.bottom
-){
-
-touchingPlayer = true;
-
-if(!started){
-startGame();
+return x >= rect.left-20 && x <= rect.right+20 &&
+       y >= rect.top-20 && y <= rect.bottom+20;
 }
 
+/* נגיעה */
+document.addEventListener("touchstart", e=>{
+let t = e.touches[0];
+if(isNearPlayer(t.clientX,t.clientY)){
+touching = true;
+if(!started) startGame();
 lastX = t.clientX;
 lastY = t.clientY;
-
 }
-
 });
 
-/* סוף נגיעה */
-
 document.addEventListener("touchend", ()=>{
-
-touchingPlayer = false;
-
+touching = false;
 });
 
 /* תנועה */
-
 document.addEventListener("touchmove", e=>{
-
-if(!touchingPlayer) return;
-
+if(!touching) return;
 e.preventDefault();
-
 let t = e.touches[0];
-
 let dx = t.clientX - lastX;
 let dy = t.clientY - lastY;
-
-let speed = Math.sqrt(dx*dx + dy*dy);
+let speed = Math.sqrt(dx*dx+dy*dy);
 
 playerX += dx;
 playerY += dy;
-
-/* גבולות */
 
 let maxX = window.innerWidth - playerSize;
 let maxY = window.innerHeight - playerSize;
@@ -220,97 +184,69 @@ if(playerY > maxY) playerY = maxY;
 player.style.left = playerX + "px";
 player.style.top = playerY + "px";
 
-/* אש */
-
-if(speed > 15){
-
-trail.style.opacity = 0.7;
-trail.style.left = playerX + 10 + "px";
-trail.style.top = playerY + 10 + "px";
-
-setTimeout(()=>{
-trail.style.opacity = 0;
-},100);
-
-}
-
 lastX = t.clientX;
 lastY = t.clientY;
 
+/* אש – trail */
+if(speed>5){
+let tr = document.createElement("div");
+tr.classList.add("trail");
+tr.style.left = (playerX+20) + "px";
+tr.style.top = (playerY+20) + "px";
+document.body.appendChild(tr);
+trails.push({el:tr,life:10});
+}
 });
 
+/* עדכון trail */
+function updateTrails(){
+for(let i=trails.length-1;i>=0;i--){
+let tr = trails[i];
+tr.life--;
+tr.el.style.opacity = tr.life/10;
+tr.el.style.left = parseFloat(tr.el.style.left) + (Math.random()*4-2) + "px";
+tr.el.style.top = parseFloat(tr.el.style.top) + (Math.random()*4-2) + "px";
+if(tr.life<=0){
+tr.el.remove();
+trails.splice(i,1);
+}
+}
+requestAnimationFrame(updateTrails);
+}
+
 /* התחלת משחק */
-
 function startGame(){
-
 started = true;
-
-startTimer();
+setInterval(()=>{time++; timer.innerText = time+"s";},1000);
 startColors();
-startBackgroundChange();
-
+updateTrails();
+startBackgroundSwap();
 }
 
-/* טיימר */
-
-function startTimer(){
-
-let time = 0;
-let timer = document.getElementById("timer");
-
-setInterval(()=>{
-
-time++;
-timer.innerText = time + "s";
-
-},1000);
-
-}
-
-/* שינוי צבע הדמות */
-
+/* צבעי הדמות */
 function startColors(){
-
 setInterval(()=>{
-
 currentIndex = nextIndex;
-nextIndex = (nextIndex + 1) % colors.length;
-
+nextIndex = (nextIndex+1)%colors.length;
 middle.style.background = colors[currentIndex];
-
 },10000);
 
 setInterval(()=>{
-
 core.style.background = colors[nextIndex];
-
 },7000);
-
 }
 
-/* שינוי רקע אחרי 30 שניות */
-
-function startBackgroundChange(){
-
+/* החלפת צבעי רקע אחרי 30 שניות */
+function startBackgroundSwap(){
 setTimeout(()=>{
-
 setInterval(()=>{
-
-bgIndex++;
-bgIndex %= colors.length;
-
-let c1 = colors[bgIndex];
-let c2 = colors[(bgIndex+1)%colors.length];
-let c3 = colors[(bgIndex+2)%colors.length];
-
-map.style.background =
-`linear-gradient(to right,${c1} 50%,${c2} 50%),
- linear-gradient(to bottom,transparent 50%,${c3} 50%)`;
-
+let c1 = colors[0], c2 = colors[1], c3 = colors[2], c4 = colors[3];
+colors = [c2,c1,c4,c3]; // החלפה זוגות
+map.style.background = 
+`linear-gradient(to right,${colors[0]} 50%,${colors[1]} 50%),
+ linear-gradient(to bottom,transparent 50%,${colors[2]} 50%)`;
 },8000);
-
 },30000);
-
 }
 
 </script>
